@@ -1,10 +1,10 @@
 {
-    "name": "with in 24 hours",
+    "name": "within 24 hours news",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "index_multi.js",
     "type": "module",
     "scripts": {
-        "start": "node index.js",
+        "start": "node index_multi.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
