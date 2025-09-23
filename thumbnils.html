@@ -1,0 +1,273 @@
+<!-- <!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>News Shorts Thumbnail</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        canvas {
+            /*width: 270px;  */
+            /*height: 480px;*/
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="thumbCanvas" width="1080" height="1920"></canvas>
+
+    <script>
+        const canvas = document.getElementById('thumbCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // load image
+        const logo = new Image();
+        logo.src = '/assests/LOGO/logo_small.png';
+
+        logo.onload = () => {
+            draw(); // draw everything after image is loaded
+        }
+
+        // ---- CONFIG ----
+        const lang = "hi";  // en, hi, gu etc.
+        const langNames = { en: "English", hi: "Hindi", gu: "Gujarati" };
+
+        // ---- UTILS ----
+        function formatDateLocalized(d = new Date(), lang = 'en') {
+            try {
+                return new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'numeric', day: 'numeric' }).format(d);
+            } catch {
+                return d.toDateString();
+            }
+        }
+
+        // ---- DRAW ----
+        function draw() {
+            ctx.fillStyle = "#222239";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // draw your logo at top center (adjust size & position as needed)
+            const logoWidth = 300;
+            const logoHeight = 300;
+            ctx.drawImage(logo, (canvas.width - logoWidth) / 2, 50, logoWidth, logoHeight);
+
+            // bottom card
+            ctx.fillStyle = "#ffffff";
+            roundRect(ctx, 60, 1000, canvas.width - 120, 720, 28, true);
+
+            // red ribbon
+            ctx.fillStyle = "#d71e1f";
+            roundRect(ctx, 60, 992, 28, 736, 8, true);
+
+            // headline with date + hashtags
+            const headline = `${formatDateLocalized(new Date(), lang)} • Daily News Update • Indian • Global • News Shorts`;
+            ctx.fillStyle = "black";
+            ctx.font = "bold 64px serif";
+            ctx.textAlign = "left";
+            wrapText(ctx, headline, 120, 1150, canvas.width - 200, 70);
+
+            // subtitle
+            ctx.font = "600 42px sans-serif";
+            ctx.fillStyle = "#000000";
+            ctx.fillText("Top headlines & quick updates", 120, 1320);
+
+            // 2nd headline → Language info
+            ctx.font = "600 50px sans-serif";
+            ctx.fillStyle = "#d71e1f";
+            ctx.fillText(`${langNames[lang] || lang}`, 120, 1420);
+
+
+
+            // hashtags
+            //   const hashtags = "#news #dailyupdate #shorts #breakingnews #breakingnewsshorts"
+            //   ctx.font = "600 38px sans-serif";
+            //   ctx.fillStyle = "#000000";
+            //   // ctx.fillText(hashtags, 120, 1580);
+            // wrapText(ctx, hashtags, 120, 1580, canvas.width - 200, 70);
+
+            // footer time
+            ctx.textAlign = "right";
+            ctx.font = "500 30px sans-serif";
+            ctx.fillStyle = "#9fb6da";
+            ctx.fillText("11:30 PM IST • New episode • Within 24 Hours News", canvas.width - 72, canvas.height - 48);
+        }
+
+        // ---- HELPERS ----
+        function roundRect(ctx, x, y, w, h, r, fill) {
+            const min = Math.min(w / 2, h / 2); r = Math.min(r, min);
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+            if (fill) ctx.fill();
+        }
+
+        // text wrapping for long headlines
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(" ");
+            let line = "";
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + " ";
+                const metrics = ctx.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    ctx.fillText(line, x, y);
+                    line = words[n] + " ";
+                    y += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, x, y);
+        }
+
+        draw();
+    </script>
+</body>
+
+</html> -->
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>News Shorts Thumbnail</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="thumbCanvas" width="1080" height="1920"></canvas>
+
+    <script>
+        const canvas = document.getElementById('thumbCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ---- CONFIG ----
+        const lang = "hi"; // en, hi, gu etc.
+        const langNames = { en: "English", hi: "Hindi", gu: "Gujarati" };
+
+        // ---- UTILS ----
+        function formatDateLocalized(d = new Date(), lang = 'en') {
+            try {
+                return new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'numeric', day: 'numeric' }).format(d);
+            } catch {
+                return d.toDateString();
+            }
+        }
+
+        // ---- LOAD LOGO ----
+        const logo = new Image();
+        logo.src = 'assests/LOGO/logo_small_transparent.png'; // relative path
+
+        logo.onload = () => {
+            draw(); // draw everything after image is loaded
+        }
+
+        // ---- DRAW ----
+        function draw() {
+            // background
+            ctx.fillStyle = "#222239";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // draw logo as subtle background
+            const logoWidth = 1000;
+            const logoHeight = 800;
+            ctx.globalAlpha = 1; // subtle opacity
+            ctx.drawImage(logo, (canvas.width - logoWidth) / 2, 50, logoWidth, logoHeight);
+            ctx.globalAlpha = 1; // reset opacity
+
+            // bottom white card
+            ctx.fillStyle = "#ffffff";
+            roundRect(ctx, 60, 1000, canvas.width - 120, 720, 28, true);
+
+            // red ribbon
+            ctx.fillStyle = "#d71e1f";
+            roundRect(ctx, 60, 992, 28, 736, 8, true);
+
+            // headline with date + hashtags
+            const headline = `${formatDateLocalized(new Date(), lang)} • Daily News Update • Indian • Global • News Shorts`;
+            ctx.fillStyle = "black";
+            ctx.font = "bold 64px serif";
+            ctx.textAlign = "left";
+            wrapText(ctx, headline, 120, 1150, canvas.width - 200, 70);
+
+            // subtitle
+            ctx.font = "600 42px sans-serif";
+            ctx.fillStyle = "#000000";
+            ctx.fillText("Top headlines & quick updates", 120, 1320);
+
+            // language info
+            ctx.font = "600 50px sans-serif";
+            ctx.fillStyle = "#d71e1f";
+            ctx.fillText(`${langNames[lang] || lang}`, 120, 1420);
+
+            // footer
+            ctx.textAlign = "right";
+            ctx.font = "500 30px sans-serif";
+            ctx.fillStyle = "#9fb6da";
+            ctx.fillText("11:30 PM IST • New episode • Within 24 Hours News", canvas.width - 72, canvas.height - 48);
+        }
+
+        // ---- HELPERS ----
+        function roundRect(ctx, x, y, w, h, r, fill) {
+            const min = Math.min(w / 2, h / 2);
+            r = Math.min(r, min);
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+            if (fill) ctx.fill();
+        }
+
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(" ");
+            let line = "";
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + " ";
+                const metrics = ctx.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    ctx.fillText(line, x, y);
+                    line = words[n] + " ";
+                    y += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, x, y);
+        }
+    </script>
+</body>
+
+</html>

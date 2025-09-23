@@ -10,14 +10,15 @@ import ffmpegPath from "ffmpeg-static";
 import dotenv from "dotenv";
 import sharp from "sharp";
 import { exec } from "child_process";
+import getAllFinalVideosByDate from "./pushYoutube.js";
 
 dotenv.config();
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ---------- UTILS ----------
 function getYesterday() {
-  return dayjs().subtract(1, "day").format("YYYY-MM-DD");
-  // return dayjs().format("YYYY-MM-DD");
+  // return dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  return dayjs().format("YYYY-MM-DD");
 }
 
 function getOutputDirForDate(date) {
@@ -61,19 +62,34 @@ function cleanGeminiJSON(text) {
 //     "Concise and impactful, structured like broadcast headlines, ensuring each sentence lands strongly.",
 //   tone: "Neutral but engaging, balancing seriousness with approachability — like a trusted anchor delivering important updates.",
 // };
-const voice = "nova";
+
+// const voice = "nova";
+// const vibe = {
+//   Voice:
+//     "faster-paced, Clear, professional, and authoritative, with a confident newsroom cadence.",
+//   Tone: "Neutral yet engaging, balancing seriousness with approachability — like a trusted anchor delivering important updates.",
+//   Delivery:
+//     "Energetic yet controlled, with a steady pace that conveys urgency without sounding rushed.",
+//   Pronunciation:
+//     "Crisp and deliberate, with emphasis on numbers, names, and key facts to ensure clarity.",
+//   Phrasing:
+//     "Concise and impactful, structured like broadcast headlines, ensuring each sentence lands strongly.",
+// };
+
+const voice = "alloy";
 const vibe = {
   Voice:
-    "faster-paced, Clear, professional, and authoritative, with a confident newsroom cadence.",
-  Tone: "Neutral yet engaging, balancing seriousness with approachability — like a trusted anchor delivering important updates.",
-  Delivery:
-    "Energetic yet controlled, with a steady pace that conveys urgency without sounding rushed.",
+    "Confident, energetic, and engaging; project authority with urgency while staying approachable.",
+  Tone: "Professional, dynamic, and slightly urgent—capture attention immediately while remaining credible and balanced.",
+  Pacing:
+    "Fast and efficient; keep the flow sharp and continuous, but never rush to the point of losing clarity.",
+  Emotion:
+    "Controlled intensity; add urgency for breaking news, neutrality for political or economic updates, and brightness for positive stories. Always convey seriousness without sounding robotic.",
   Pronunciation:
-    "Crisp and deliberate, with emphasis on numbers, names, and key facts to ensure clarity.",
-  Phrasing:
-    "Concise and impactful, structured like broadcast headlines, ensuring each sentence lands strongly.",
+    "Crisp and precise; hit consonants clearly, emphasize critical words like “breaking,” “urgent,” “confirmed,” “developing” to make headlines impactful.",
+  Pauses:
+    "Very brief—just a split second between headlines or after key phrases to let the audience absorb information before moving on.",
 };
-
 // ---------- NEWS (via Gemini) ----------
 async function getNews(date) {
   console.log("📰 Fetching news from Gemini for", date, "...");
@@ -93,73 +109,70 @@ async function getNews(date) {
     "gemini-2.5-pro",
   ]; // fallback list
   let lastError;
+  //  "title": "Generic headline for the bulletin with some hashtags, date, and 'With In 24 Hours News'",
+  // "tags": "SEO-friendly, keyword-rich tags (approx. 250 characters, comma-separated) related to the news",
+  // "hashtags": "SEO-friendly, keyword-rich hashtags (comma-separated) related to the news",
 
-  const prompt = () =>
-    `You are a professional multilingual journalist specializing in analysis.
-Your task is to prepare a "Daily Knowledge Bulletin" of ${date} in valid JSON format.
+  const prompt =
+    () => `You are a professional multilingual journalist and an expert geopolitical and economic analyst.
+Your task is to prepare a "Daily Knowledge Bulletin" for ${date} in valid JSON format, focusing on detailed, non-generic analysis.
 
-The JSON must strictly follow this structure and be returned as a single valid JSON object only:
+The JSON must strictly follow this structure and be returned as a single valid JSON object only.
 
 {
-  "title": "Generic headline for the bulletin with some hashtags, date, and 'With In 24 Hours News'",
-  "tags": "SEO-friendly, keyword-rich tags (approx. 250 characters, comma-separated) related to the news",
-  "hashtags": "SEO-friendly, keyword-rich hashtags (comma-separated) related to the news",
+
   "India": [
     {
       "english": {
-        "title": "Factual headline here",
-        "description": "2–3 sentence summary of the event or development.",
-        "why_it_matters": "Concise analysis of long-term impact (geopolitical, economic, scientific)."
+        "title": "Factual headline (10–16 words, knowledge-heavy, specific details)",
+        "description": "Concise 2–3 sentence summary focusing on concrete, verifiable details. Avoid vague phrases like 'concerns remain' or 'mixed results'.",
+        "why_it_matters": "Sharp, 1–2 sentence analysis on the long-term impact on policy, economy, tech, science, or geopolitics. Explain the 'so what?' factor."
       },
       "hindi": {
-        "title": "हिन्दी शीर्षक यहाँ (लगभग 65 अक्षरों वाला वाक्य)"
-        "description": "घटना या विकास का 2–3 वाक्य का सारांश।",
-        "why_it_matters": "दीर्घकालिक प्रभाव का संक्षिप्त विश्लेषण।"
+        "title": "गंभीर और सटीक हिन्दी शीर्षक (लगभग 50 अक्षर)",
+        "description": "तथ्यों पर आधारित 2–3 वाक्य का संक्षिप्त सारांश। वाक्य में विशिष्ट और ठोस जानकारी होनी चाहिए।",
+        "why_it_matters": "नीति, अर्थव्यवस्था, विज्ञान, या रक्षा पर दीर्घकालिक और वास्तविक प्रभाव का विश्लेषण।"
       },
       "gujarati": {
-        "title": "ગુજરાતી શીર્ષક અહીં (65 અક્ષર આસપાસના વાક્યો)",
-        "description": "ઘટના અથવા વિકાસનો 2–3 વાક્યનો સારાંશ.",
-        "why_it_matters": "દીર્ધકાળીન અસરનું સંક્ષિપ્ત વિશ્લેષણ."
+        "title": "મુખ્ય અને સચોટ ગુજરાતી શીર્ષક (લગભગ 50 અક્ષર)",
+        "description": "તથ્ય આધારિત 2–3 વાક્યનું સંક્ષિપ્ત વર્ણન. વર્ણનમાં ચોક્કસ અને મજબૂત માહિતી હોવી જોઈએ.",
+        "why_it_matters": "નીતિ, અર્થતંત્ર, વિજ્ઞાન અથવા રક્ષણ પર લાંબા ગાળાનો અને વાસ્તવિક પ્રભાવ."
       },
       "india": true
     }
-    /* Repeat 4–6 such objects in the "India" array (total 4–6 India items). Each India item must include "india": true. */
   ],
   "World": [
     {
       "english": {
-        "title": "Factual headline here",
-        "description": "2–3 sentence summary of the event or development.",
-        "why_it_matters": "Concise analysis of long-term impact (geopolitical, economic, scientific)."
+        "title": "Factual headline (10–16 words, knowledge-heavy, specific details)",
+        "description": "Concise 2–3 sentence summary focusing on concrete, verifiable details. Avoid vague phrases.",
+        "why_it_matters": "Sharp, 1–2 sentence analysis on the long-term impact on geopolitics, economy, climate, or health. Explain the 'so what?' factor."
       },
       "hindi": {
-        "title": "हिंदी शीर्षक यहाँ",
-        "description": "घटना या विकास का 2–3 वाक्य का सारांश।",
-        "why_it_matters": "दीर्घकालिक प्रभाव का संक्षिप्त विश्लेषण।"
+        "title": "गंभीर और सटीक हिन्दी शीर्षक (लगभग 50 अक्षर)",
+        "description": "तथ्यों पर आधारित 2–3 वाक्य का संक्षिप्त सारांश।",
+        "why_it_matters": "अंतरराष्ट्रीय नीति, अर्थव्यवस्था, विज्ञान या रक्षा पर वास्तविक और दीर्घकालिक प्रभाव।"
       },
       "gujarati": {
-        "title": "ગુજરાતી શીર્ષક અહીં",
-        "description": "ઘટના અથવા વિકાસનો 2–3 વાક્યનો સારાંશ.",
-        "why_it_matters": "દીર્ધકાળીન અસરનું સંક્ષિપ્ત વિશ્લેષણ."
+        "title": "મુખ્ય અને સચોટ ગુજરાતી શીર્ષક (લગભગ 50 અક્ષર)",
+        "description": "તથ્ય આધારિત 2–3 વાક્યનું સંક્ષિપ્ત વર્ણન.",
+        "why_it_matters": "આંતરરાષ્ટ્રીય નીતિ, અર્થતંત્ર, વિજ્ઞાન અથવા રક્ષણ પર વાસ્તવિક અને લાંબા ગાળાનો પ્રભાવ."
       }
     }
-    /* Repeat 4–6 such objects in the "World" array (total 4–6 World items). */
   ]
+ "title": The single best catchy YouTube Shorts title (45–60 characters) with India & Global context, urgency and curiosity hooks (e.g., "Shocking", "Within 24 Hrs"), today’s date (e.g., 22 Sept 2025), and 1–2 strong hashtags; return only the title text.
+ "tags": 8–12 SEO-friendly, keyword-rich tags (approx. 250 characters, comma-separated) related to India & Global news, breaking news, economy, technology, geopolitics, and world updates.
+ "hashtags": 3–5 relevant, keyword-rich hashtags (comma-separated) for YouTube Shorts, reflecting urgency and trending topics in India & Global news.
 }
 
-Requirements:
-1. Provide 4–6 major key events that matter to an Indian audience in each section ("India" and "World").
-2. Coverage must include policy, economy, environment, science, technology, health, defence, and international relations across the items.
-3. Exclude entertainment, celebrity, and sports content.
-4. Ensure all fields are fully translated into English, Hindi, and Gujarati.
-5. Return the final response as a single valid JSON object only, with no extra commentary or text outside the JSON.
-
-Notes for the generator:
-- Each news item must be factual-sounding and concise (title: 8–16 words; description: 2–3 sentences; why_it_matters: 1–2 sentences).
-- For India items include the key "india": true at the item root.
-- make sure no apostrophes are included in any field of the output.
-- Do not include comments or sample placeholders in the final JSON output; the comments above are only for prompt clarity.
-`;
+Strict rules:
+0. After generating the Hindi and Gujarati text, perform a final review to ensure perfect spelling and grammar.
+1. Focus on providing **detailed, non-generic information** in all fields, especially the 'description' and 'why_it_matters' sections.
+2. Provide only 4-5 major key events in each section ("India" and "World").
+3. News must be serious and knowledgeable: policy, economy, environment, science, technology, health, defence, or international relations.
+4. Exclude entertainment, celebrity, lifestyle, and sports.
+5. Do not use apostrophes in any field.
+6. Return only the final valid JSON object with no comments, explanations, or extra text.`;
 
   for (let attempt = 0; attempt < models.length; attempt++) {
     const modelName = models[attempt];
@@ -173,7 +186,7 @@ Notes for the generator:
 
       // ✅ Extract raw text
       const text = res?.response?.text ? res.response.text().trim() : "";
-      console.log("✅ Gemini raw output:", text);
+      // console.log("✅ Gemini raw output:", text);
 
       // ✅ Parse JSON safely
       let parsed;
@@ -181,7 +194,7 @@ Notes for the generator:
         const cleaned = cleanGeminiJSON(text);
         parsed = JSON.parse(cleaned);
       } catch (e) {
-        throw new Error("Gemini returned invalid JSON: " + text.slice(0, 200));
+        throw new Error("Gemini returned invalid JSON: " + text);
       }
 
       // ✅ Always return arrays
@@ -189,13 +202,18 @@ Notes for the generator:
         India: Array.isArray(parsed.India) ? parsed.India : [],
         World: Array.isArray(parsed.World) ? parsed.World : [],
       };
+      const youtubeSEO = {
+        Title: parsed.title,
+        Tags: parsed.tags,
+        Hashtags: parsed.hashtags,
+      };
 
       // ✅ Stop retrying if we got valid news
       if (safeParsed.India.length > 0 || safeParsed.World.length > 0) {
         console.log(
           `✅ Got ${safeParsed.India.length} India news & ${safeParsed.World.length} World news`
         );
-        return safeParsed;
+        return { safeParsed, youtubeSEO };
       }
 
       throw new Error("Empty news arrays");
@@ -283,8 +301,8 @@ async function fetchImage(query, savePath) {
         const cleanUrl = imgSrc.split("?")[0];
         firstValidImage = { ariaLabel, cleanUrl };
         console.log(`✅ First Valid Image Found:`);
-        console.log(`   🏷️ ${ariaLabel}`);
-        console.log(`   📷 ${cleanUrl}`);
+        // console.log(`   🏷️ ${ariaLabel}`);
+        // console.log(`   📷 ${cleanUrl}`);
       }
     });
 
@@ -338,18 +356,18 @@ function prepareText(text, maxLineLength = 45) {
 
 function overlayImage(path) {
   const { videoFile, imageFile, outputFile } = path;
-  console.log("🎬 Input video:", videoFile);
-  console.log("🖼️ Input image:", imageFile);
-  console.log("📂 Output file:", outputFile);
+  // console.log("🎬 Input video:", videoFile);
+  // console.log("🖼️ Input image:", imageFile);
+  // console.log("📂 Output file:", outputFile);
 
   return new Promise((resolve, reject) => {
     if (!videoFile || !imageFile || !outputFile) {
       return reject(new Error("❌ Missing file path!"));
     }
 
-    console.log("🎬 Input video:", videoFile);
-    console.log("🖼️ Input image:", imageFile);
-    console.log("📂 Output file:", outputFile);
+    // console.log("🎬 Input video:", videoFile);
+    // console.log("🖼️ Input image:", imageFile);
+    // console.log("📂 Output file:", outputFile);
 
     ffmpeg(videoFile)
       .input(imageFile)
@@ -378,7 +396,7 @@ function generateReel({
   return new Promise(async (resolve, reject) => {
     try {
       const metadata = await ffprobePromise(audioFile);
-      const duration = metadata.format.duration || 10;
+      const duration = metadata.format.duration || 20;
       const { width: videoWidth } = await getVideoDimensions(videoFile);
       console.log("🎬 Reel width:", videoWidth);
       console.log("🎵 Audio duration:", duration);
@@ -421,9 +439,9 @@ function generateReel({
           "-c:a aac",
           `-t ${Math.round(duration)}`,
         ])
-        .on("start", (cmd) =>
-          console.log("FFmpeg started (generateReel):", cmd)
-        )
+        // .on("start", (cmd) =>
+        //   console.log("FFmpeg started (generateReel):", cmd)
+        // )
         .on("end", () => {
           console.log("✅ Reel generated:", outputFile);
           resolve();
@@ -454,7 +472,7 @@ async function generateTTS(allNews, outputDir) {
 
   for (let i = 0; i < allNews.length; i++) {
     const item = allNews[i];
-    console.log("item:", item.id + 1);
+    // console.log("item:", item.id + 1);
 
     const audioPath = path.join(
       outputDir,
@@ -523,7 +541,7 @@ async function generateTTS(allNews, outputDir) {
         err.message || err
       );
     }
-    console.log("🎬 Output video: 909090", path.join(outputVideoFile));
+    // console.log("🎬 Output video: 909090", path.join(outputVideoFile));
     sleep(2000 + Math.random() * 3000);
 
     try {
@@ -594,7 +612,7 @@ function checkStreams(file) {
 async function validateVideos(videoFiles) {
   const results = await Promise.all(videoFiles.map(checkStreams));
   results.forEach(({ file, hasVideo, hasAudio }) => {
-    console.log(`${file} → video:${hasVideo}, audio:${hasAudio}`);
+    // console.log(`${file} → video:${hasVideo}, audio:${hasAudio}`);
   });
 
   return results;
@@ -642,7 +660,7 @@ async function mergeVideos(videoFiles, outputFile) {
         "-ac 2",
         "-ar 44100",
       ])
-      .on("start", (cmd) => console.log("FFmpeg started (merge):", cmd))
+      // .on("start", (cmd) => console.log("FFmpeg started (merge):", cmd))
       .on("end", () => {
         console.log("✅ Videos merged:", outputFile);
         resolve();
@@ -663,264 +681,44 @@ async function mergeVideos(videoFiles, outputFile) {
     const date = getYesterday();
     console.log("📅 Date:", date);
     const outputDir = getOutputDirForDate(date);
-    // let newsORG = await getNews(date);
-    // let newsORG = {
-    //   India: [
-    //     {
-    //       english: {
-    //         title: "New Agricultural Subsidy Program Launched",
-    //         description:
-    //           "The Indian government unveiled a new agricultural subsidy program targeting small and marginal farmers.  The program aims to provide direct financial assistance and improve access to technology.",
-    //         why_it_matters:
-    //           "This initiative could significantly impact food security and rural incomes, potentially reducing farmer distress and boosting agricultural productivity.  However, successful implementation hinges on efficient distribution and minimizing corruption.",
-    //       },
-    //       hindi: {
-    //         title: "नई कृषि सब्सिडी कार्यक्रम शुरू किया गया",
-    //         description:
-    //           "भारत सरकार ने छोटे और सीमांत किसानों को लक्षित करते हुए एक नया कृषि सब्सिडी कार्यक्रम शुरू किया है।  इस कार्यक्रम का उद्देश्य प्रत्यक्ष वित्तीय सहायता प्रदान करना और प्रौद्योगिकी तक पहुंच में सुधार करना है।",
-    //         why_it_matters:
-    //           "यह पहल खाद्य सुरक्षा और ग्रामीण आय को महत्वपूर्ण रूप से प्रभावित कर सकती है, संभावित रूप से किसानों की परेशानी को कम कर सकती है और कृषि उत्पादकता को बढ़ावा दे सकती है। हालांकि, सफल कार्यान्वयन कुशल वितरण और भ्रष्टाचार को कम करने पर निर्भर करता है।",
-    //       },
-    //       gujarati: {
-    //         title: "નવી કૃષિ સબસિડી યોજના શરૂ કરવામાં આવી",
-    //         description:
-    //           "ભારત સરકારે નાના અને સીમાંત ખેડૂતોને લક્ષ્યાંકિત કરતી એક નવી કૃષિ સબસિડી યોજના શરૂ કરી છે.  આ યોજનાનો ઉદ્દેશ્ય સીધી નાણાકીય સહાય પૂરી પાડવાનો અને ટેકનોલોજીની ઍક્સેસમાં સુધારો કરવાનો છે.",
-    //         why_it_matters:
-    //           "આ પહેલ ખાદ્ય સુરક્ષા અને ગ્રામીણ આવકને નોંધપાત્ર રીતે અસર કરી શકે છે, સંભવતઃ ખેડૂતોની મુશ્કેલીઓ ઓછી કરી શકે છે અને કૃષિ ઉત્પાદકતામાં વધારો કરી શકે છે. જો કે, સફળ અમલીકરણ કાર્યક્ષમ વિતરણ અને ભ્રષ્ટાચાર ઘટાડવા પર આધારિત છે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title: "India's Chandrayaan-3 Mission Data Analysis Begins",
-    //         description:
-    //           "Scientists have begun analyzing the extensive data collected by the Chandrayaan-3 lunar rover.  Initial findings are expected to shed light on the moon's geological composition and water ice presence.",
-    //         why_it_matters:
-    //           "This data will significantly advance our understanding of lunar geology and the potential for future lunar exploration and resource utilization, including potential water ice extraction for future missions.",
-    //       },
-    //       hindi: {
-    //         title: "भारत के चंद्रयान-3 मिशन डेटा विश्लेषण शुरू",
-    //         description:
-    //           "वैज्ञानिकों ने चंद्रयान-3 चंद्र रोवर द्वारा एकत्रित व्यापक डेटा का विश्लेषण शुरू कर दिया है। प्रारंभिक निष्कर्षों से चंद्रमा की भूवैज्ञानिक संरचना और जल बर्फ की उपस्थिति पर प्रकाश पड़ने की उम्मीद है।",
-    //         why_it_matters:
-    //           "यह डेटा चंद्रमा के भूविज्ञान और भविष्य के चंद्र अन्वेषण और संसाधन उपयोग, जिसमें भविष्य के मिशनों के लिए संभावित जल बर्फ निष्कर्षण शामिल है, की हमारी समझ को काफी आगे बढ़ाएगा।",
-    //       },
-    //       gujarati: {
-    //         title: "ભારતના ચંદ્રયાન-3 મિશન ડેટાનું વિશ્લેષણ શરૂ",
-    //         description:
-    //           "વૈજ્ઞાનિકોએ ચંદ્રયાન-3 ચંદ્ર રોવર દ્વારા એકત્રિત કરવામાં આવેલા વિશાળ ડેટાનું વિશ્લેષણ શરૂ કર્યું છે. પ્રારંભિક તારણો ચંદ્રની ભૂસ્તરશાસ્ત્રીય રચના અને પાણીના બરફની હાજરી પર પ્રકાશ પાડશે.",
-    //         why_it_matters:
-    //           "આ ડેટા ચંદ્ર ભૂસ્તરશાસ્ત્ર અને ભવિષ્યના ચંદ્ર અન્વેષણ અને સંસાધન ઉપયોગ, જેમાં ભવિષ્યના મિશન માટે સંભવિત પાણીના બરફના નિષ્કર્ષણનો સમાવેશ થાય છે, તેના વિશેની આપણી સમજને નોંધપાત્ર રીતે આગળ વધારશે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title: "New Digital Public Infrastructure Bill Introduced",
-    //         description:
-    //           "Parliament introduced a new bill aimed at establishing a robust digital public infrastructure for various government services.  The bill focuses on data security and interoperability.",
-    //         why_it_matters:
-    //           "This could significantly improve the efficiency and accessibility of government services, promoting digital inclusion and potentially streamlining bureaucratic processes.  However, concerns about data privacy and potential misuse need careful consideration.",
-    //       },
-    //       hindi: {
-    //         title: "नया डिजिटल सार्वजनिक बुनियादी ढांचा विधेयक पेश किया गया",
-    //         description:
-    //           "संसद ने विभिन्न सरकारी सेवाओं के लिए एक मजबूत डिजिटल सार्वजनिक बुनियादी ढांचा स्थापित करने के उद्देश्य से एक नया विधेयक पेश किया है। यह विधेयक डेटा सुरक्षा और अंतःक्रियाशीलता पर केंद्रित है।",
-    //         why_it_matters:
-    //           "यह सरकारी सेवाओं की दक्षता और सुलभता में उल्लेखनीय सुधार कर सकता है, डिजिटल समावेशन को बढ़ावा दे सकता है और संभावित रूप से नौकरशाही प्रक्रियाओं को सुव्यवस्थित कर सकता है। हालांकि, डेटा गोपनीयता और संभावित दुरुपयोग के बारे में चिंताओं पर सावधानीपूर्वक विचार करने की आवश्यकता है।",
-    //       },
-    //       gujarati: {
-    //         title: "નવી ડિજિટલ જાહેર ઈન્ફ્રાસ્ટ્રક્ચર બિલ રજૂ કરવામાં આવ્યું",
-    //         description:
-    //           "સંસદે વિવિધ સરકારી સેવાઓ માટે મજબૂત ડિજિટલ જાહેર ઈન્ફ્રાસ્ટ્રક્ચર સ્થાપિત કરવાના ઉદ્દેશ્યથી એક નવું બિલ રજૂ કર્યું છે. આ બિલ ડેટા સુરક્ષા અને ઇન્ટરઓપરેબિલિટી પર કેન્દ્રિત છે.",
-    //         why_it_matters:
-    //           "આ સરકારી સેવાઓની કાર્યક્ષમતા અને સુલભતામાં નોંધપાત્ર સુધારો કરી શકે છે, ડિજિટલ સમાવેશને પ્રોત્સાહન આપી શકે છે અને સંભવિત રીતે નોકરશાહી પ્રક્રિયાઓને સુव्यवस्थित કરી શકે છે. જો કે, ડેટા ગોપનીયતા અને સંભવિત દુરુપયોગ વિશેની ચિંતાઓ પર કાળજીપૂર્વક વિચાર કરવાની જરૂર છે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title: "Monsoon Rainfall Impacts Agricultural Output",
-    //         description:
-    //           "Irregular monsoon rainfall patterns have impacted agricultural yields across several states.  Farmers are facing challenges with crop production and potential losses.",
-    //         why_it_matters:
-    //           "This underscores the vulnerability of India's agricultural sector to climate change and the need for robust drought-resistant crop varieties and effective irrigation infrastructure. Food prices might be affected.",
-    //       },
-    //       hindi: {
-    //         title: "मानसून वर्षा का कृषि उत्पादन पर प्रभाव",
-    //         description:
-    //           "अनियमित मानसून वर्षा के पैटर्न ने कई राज्यों में कृषि उपज को प्रभावित किया है। किसानों को फसल उत्पादन और संभावित नुकसान के साथ चुनौतियों का सामना करना पड़ रहा है।",
-    //         why_it_matters:
-    //           "यह जलवायु परिवर्तन के प्रति भारत के कृषि क्षेत्र की भेद्यता और मजबूत सूखा प्रतिरोधी फसल किस्मों और प्रभावी सिंचाई बुनियादी ढांचे की आवश्यकता को रेखांकित करता है। खाद्य कीमतें प्रभावित हो सकती हैं।",
-    //       },
-    //       gujarati: {
-    //         title: "ચોમાસાના વરસાદની કૃષિ ઉત્પાદન પર અસર",
-    //         description:
-    //           "અનિયમિત ચોમાસાના વરસાદના પેટર્નની ઘણી રાજ્યોમાં કૃષિ ઉત્પાદન પર અસર પડી છે. ખેડૂતોને પાક ઉત્પાદન અને સંભવિત નુકસાન સાથે પડકારોનો સામનો કરવો પડી રહ્યો છે.",
-    //         why_it_matters:
-    //           "આ ભારતના કૃષિ ક્ષેત્રની આબોહવા પરિવર્તન પ્રત્યેના સંવેદનશીલતા અને મજબૂત દુષ્કાળ-પ્રતિરોધક પાકની જાતો અને અસરકારક સિંચાઈ ઈન્ફ્રાસ્ટ્રક્ચરની જરૂરિયાતને રેખાંકિત કરે છે. ખાદ્ય ભાવો પ્રભાવિત થઈ શકે છે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title:
-    //           "Strengthening Cybersecurity Measures for Critical Infrastructure",
-    //         description:
-    //           "The government announced new initiatives to bolster cybersecurity defenses for critical infrastructure sectors, including power grids and financial institutions.",
-    //         why_it_matters:
-    //           "Protecting critical infrastructure from cyberattacks is paramount for national security and economic stability.  These measures aim to reduce vulnerabilities and enhance resilience against increasingly sophisticated threats.",
-    //       },
-    //       hindi: {
-    //         title:
-    //           "महत्वपूर्ण बुनियादी ढांचे के लिए साइबर सुरक्षा उपायों को मजबूत करना",
-    //         description:
-    //           "सरकार ने बिजली ग्रिड और वित्तीय संस्थानों सहित महत्वपूर्ण बुनियादी ढांचा क्षेत्रों के लिए साइबर सुरक्षा बचाव को मजबूत करने के लिए नई पहल की घोषणा की है।",
-    //         why_it_matters:
-    //           "साइबर हमलों से महत्वपूर्ण बुनियादी ढांचे की रक्षा करना राष्ट्रीय सुरक्षा और आर्थिक स्थिरता के लिए सर्वोपरि है। ये उपाय कमजोरियों को कम करने और तेजी से परिष्कृत खतरों के खिलाफ लचीलापन बढ़ाने का लक्ष्य रखते हैं।",
-    //       },
-    //       gujarati: {
-    //         title:
-    //           "મહત્વપૂર્ણ ઈન્ફ્રાસ્ટ્રક્ચર માટે સાયબર સુરક્ષા પગલાંને મજબૂત બનાવવા",
-    //         description:
-    //           "સરકારે વીજ ગ્રીડ અને નાણાકીય સંસ્થાઓ સહિત મહત્વપૂર્ણ ઈન્ફ્રાસ્ટ્રક્ચર ક્ષેત્રો માટે સાયબર સુરક્ષા સુરક્ષાને મજબૂત બનાવવા માટે નવી પહેલોની જાહેરાત કરી છે.",
-    //         why_it_matters:
-    //           "સાયબર હુમલાઓથી મહત્વપૂર્ણ ઈન્ફ્રાસ્ટ્રક્ચરનું રક્ષણ રાષ્ટ્રીય સુરક્ષા અને આર્થિક સ્થિરતા માટે અત્યંત મહત્વનું છે. આ પગલાંનો ઉદ્દેશ્ય સંવેદનશીલતા ઘટાડવા અને વધુને વધુ ગૂંચવણભર્યા ખતરાઓ સામે લવચીકતા વધારવાનો છે.",
-    //       },
-    //     },
-    //   ],
-    //   World: [
-    //     {
-    //       english: {
-    //         title: "Global Inflation Remains a Concern",
-    //         description:
-    //           "Persistent inflation continues to challenge many global economies.  Central banks are grappling with balancing economic growth and price stability.",
-    //         why_it_matters:
-    //           "High inflation erodes purchasing power, potentially leading to social unrest and hindering economic growth.  The global economy's future trajectory significantly depends on effective inflation management.",
-    //       },
-    //       hindi: {
-    //         title: "वैश्विक मुद्रास्फीति एक चिंता का विषय बनी हुई है",
-    //         description:
-    //           "लगातार मुद्रास्फीति कई वैश्विक अर्थव्यवस्थाओं के लिए चुनौती बनी हुई है। केंद्रीय बैंक आर्थिक विकास और मूल्य स्थिरता के बीच संतुलन बनाने से जूझ रहे हैं।",
-    //         why_it_matters:
-    //           "उच्च मुद्रास्फीति क्रय शक्ति को कम करती है, जिससे सामाजिक अशांति हो सकती है और आर्थिक विकास में बाधा उत्पन्न हो सकती है। वैश्विक अर्थव्यवस्था का भविष्य का मार्ग प्रभावी मुद्रास्फीति प्रबंधन पर महत्वपूर्ण रूप से निर्भर करता है।",
-    //       },
-    //       gujarati: {
-    //         title: "વૈશ્વિક ફુગાવો ચિંતાનો વિષય રહ્યો",
-    //         description:
-    //           "ચાલુ ફુગાવો ઘણી વૈશ્વિક અર્થવ્યવસ્થાઓ માટે પડકાર રહ્યો છે. કેન્દ્રીય બેંકો આર્થિક વિકાસ અને ભાવ સ્થિરતા વચ્ચે સંતુલન બનાવવા માટે સંઘર્ષ કરી રહી છે.",
-    //         why_it_matters:
-    //           "ઉચ્ચ ફુગાવાથી ખરીદ શક્તિ ઓછી થાય છે, જેનાથી સામાજિક અશાંતિ થઈ શકે છે અને આર્થિક વિકાસમાં અવરોધ આવી શકે છે. વૈશ્વિક અર્થવ્યવસ્થાનો ભવિષ્યનો માર્ગ અસરકારક ફુગાવાના વ્યવસ્થાપન પર નોંધપાત્ર રીતે નિર્ભર છે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title: "EU Energy Policy Adjustments",
-    //         description:
-    //           "The European Union announced adjustments to its energy policy in response to the ongoing energy crisis.  The focus is on diversifying energy sources and improving energy efficiency.",
-    //         why_it_matters:
-    //           "This policy shift reflects the EU's efforts to enhance energy security and reduce its dependence on specific energy suppliers.  The long-term implications for global energy markets remain to be seen.",
-    //       },
-    //       hindi: {
-    //         title: "ईयू ऊर्जा नीति समायोजन",
-    //         description:
-    //           "यूरोपीय संघ ने चल रहे ऊर्जा संकट के जवाब में अपनी ऊर्जा नीति में समायोजन की घोषणा की है। ध्यान ऊर्जा स्रोतों में विविधता लाने और ऊर्जा दक्षता में सुधार पर है।",
-    //         why_it_matters:
-    //           "यह नीतिगत बदलाव ऊर्जा सुरक्षा बढ़ाने और विशिष्ट ऊर्जा आपूर्तिकर्ताओं पर अपनी निर्भरता कम करने के यूरोपीय संघ के प्रयासों को दर्शाता है। वैश्विक ऊर्जा बाजारों के लिए दीर्घकालिक निहितार्थ अभी देखने बाकी हैं।",
-    //       },
-    //       gujarati: {
-    //         title: "EU ઉર્જા નીતિમાં ગોઠવણો",
-    //         description:
-    //           "યુરોપિયન યુનિયને ચાલુ ઉર્જા કટોકટીના પ્રતિભાવમાં તેની ઉર્જા નીતિમાં ગોઠવણોની જાહેરાત કરી છે. ધ્યાન ઉર્જાના સ્ત્રોતોમાં વૈવિધ્યકરણ અને ઉર્જા કાર્યક્ષમતામાં સુધારો કરવા પર છે.",
-    //         why_it_matters:
-    //           "આ નીતિમાં થયેલો ફેરફાર ઉર્જા સુરક્ષા વધારવા અને ચોક્કસ ઉર્જા પુરવઠાકારો પર તેની નિર્ભરતા ઓછી કરવાના EUના પ્રયાસો દર્શાવે છે. વૈશ્વિક ઉર્જા બજારો માટે લાંબા ગાળાના પરિણામો હજુ જોવાના બાકી છે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title: "Advancements in Renewable Energy Technologies",
-    //         description:
-    //           "Significant breakthroughs in solar panel efficiency and energy storage technologies have been reported.  These advancements are expected to accelerate the global transition to renewable energy.",
-    //         why_it_matters:
-    //           "The cost reductions and performance improvements in renewable energy technologies are crucial for achieving global climate goals and mitigating the impacts of climate change. This will impact the fossil fuel industry.",
-    //       },
-    //       hindi: {
-    //         title: "नवीकरणीय ऊर्जा प्रौद्योगिकियों में प्रगति",
-    //         description:
-    //           "सौर पैनल दक्षता और ऊर्जा भंडारण प्रौद्योगिकियों में महत्वपूर्ण सफलताओं की सूचना मिली है। इन प्रगति से नवीकरणीय ऊर्जा में वैश्विक संक्रमण में तेजी आने की उम्मीद है।",
-    //         why_it_matters:
-    //           "नवीकरणीय ऊर्जा प्रौद्योगिकियों में लागत में कमी और प्रदर्शन में सुधार वैश्विक जलवायु लक्ष्यों को प्राप्त करने और जलवायु परिवर्तन के प्रभावों को कम करने के लिए महत्वपूर्ण हैं। यह जीवाश्म ईंधन उद्योग को प्रभावित करेगा।",
-    //       },
-    //       gujarati: {
-    //         title: "નવીનીકરણીય ઉર્જા ટેકનોલોજીમાં પ્રગતિ",
-    //         description:
-    //           "સૌર પેનલ કાર્યક્ષમતા અને ઉર્જા સંગ્રહ ટેકનોલોજીમાં નોંધપાત્ર સફળતાઓની જાણ કરવામાં આવી છે. આ પ્રગતિથી નવીનીકરણીય ઉર્જામાં વૈશ્વિક સંક્રમણમાં વેગ આવવાની અપેક્ષા છે.",
-    //         why_it_matters:
-    //           "નવીનીકરણીય ઉર્જા ટેકનોલોજીમાં ખર્ચમાં ઘટાડો અને કામગીરીમાં સુધારો ગ્લોબલ ક્લાઇમેટ ગોલ્સ હાંસલ કરવા અને આબોહવા પરિવર્તનની અસરોને ઘટાડવા માટે ખૂબ મહત્વપૂર્ણ છે. આ ફોસિલ ફ્યુઅલ ઉદ્યોગને અસર કરશે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title: "International Cooperation on Climate Change",
-    //         description:
-    //           "Several nations announced increased commitments to reducing greenhouse gas emissions and promoting climate resilience.  New initiatives are being developed for international collaboration.",
-    //         why_it_matters:
-    //           "Strengthened international cooperation on climate change is crucial for effective mitigation and adaptation strategies.  Success depends on the collective actions and commitments of participating nations.",
-    //       },
-    //       hindi: {
-    //         title: "जलवायु परिवर्तन पर अंतर्राष्ट्रीय सहयोग",
-    //         description:
-    //           "कई देशों ने ग्रीनहाउस गैस उत्सर्जन को कम करने और जलवायु लचीलापन को बढ़ावा देने के लिए बढ़ी हुई प्रतिबद्धताओं की घोषणा की है। अंतर्राष्ट्रीय सहयोग के लिए नई पहल विकसित की जा रही हैं।",
-    //         why_it_matters:
-    //           "जलवायु परिवर्तन पर मजबूत अंतर्राष्ट्रीय सहयोग प्रभावी शमन और अनुकूलन रणनीतियों के लिए महत्वपूर्ण है। सफलता भाग लेने वाले देशों के सामूहिक कार्यों और प्रतिबद्धताओं पर निर्भर करती है।",
-    //       },
-    //       gujarati: {
-    //         title: "આબોહવા પરિવર્તન પર આંતરરાષ્ટ્રીય સહયોગ",
-    //         description:
-    //           "ઘણા દેશોએ ગ્રીનહાઉસ ગેસ ઉત્સર્જન ઘટાડવા અને આબોહવા પ્રતિકારકતાને પ્રોત્સાહન આપવા માટે વધેલી પ્રતિબદ્ધતાઓની જાહેરાત કરી છે. આંતરરાષ્ટ્રીય સહયોગ માટે નવી પહેલો વિકસાવવામાં આવી રહી છે.",
-    //         why_it_matters:
-    //           "આબોહવા પરિવર્તન પર મજબૂત આંતરરાષ્ટ્રીય સહયોગ અસરકારક શમન અને અનુકૂલન વ્યૂહરચના માટે ખૂબ મહત્વપૂર્ણ છે. સફળતા ભાગ લેતા દેશોની સામૂહિક ક્રિયાઓ અને પ્રતિબદ્ધતા પર નિર્ભર કરે છે.",
-    //       },
-    //     },
-    //     {
-    //       english: {
-    //         title: "Geopolitical Tensions in the South China Sea",
-    //         description:
-    //           "Tensions remain high in the South China Sea due to competing territorial claims and maritime disputes.  Diplomatic efforts to de-escalate the situation continue.",
-    //         why_it_matters:
-    //           "The South China Sea is a crucial maritime route for global trade and resource extraction.  Continued tensions could disrupt global supply chains and escalate into larger regional conflicts.",
-    //       },
-    //       hindi: {
-    //         title: "दक्षिण चीन सागर में भू-राजनीतिक तनाव",
-    //         description:
-    //           "प्रतिस्पर्धी क्षेत्रीय दावों और समुद्री विवादों के कारण दक्षिण चीन सागर में तनाव उच्च बना हुआ है। स्थिति को कम करने के लिए राजनयिक प्रयास जारी हैं।",
-    //         why_it_matters:
-    //           "दक्षिण चीन सागर वैश्विक व्यापार और संसाधन निष्कर्षण के लिए एक महत्वपूर्ण समुद्री मार्ग है। निरंतर तनाव वैश्विक आपूर्ति श्रृंखलाओं को बाधित कर सकता है और बड़े क्षेत्रीय संघर्षों में बढ़ सकता है।",
-    //       },
-    //       gujarati: {
-    //         title: "દક્ષિણ ચાઇના સમુદ્રમાં ભૂ-રાજકીય તણાવ",
-    //         description:
-    //           "સ્પર્ધાત્મક પ્રાદેશિક દાવાઓ અને દરિયાઈ વિવાદોને કારણે દક્ષિણ ચાઇના સમુદ્રમાં તણાવ ઊંચો રહ્યો છે. પરિસ્થિતિને શાંત કરવા માટે રાજદ્વારી પ્રયાસો ચાલુ છે.",
-    //         why_it_matters:
-    //           "દક્ષિણ ચાઇના સમુદ્ર વૈશ્વિક વેપાર અને સંસાધન નિષ્કર્ષણ માટે એક મહત્વપૂર્ણ દરિયાઈ માર્ગ છે. ચાલુ તણાવ વૈશ્વિક પુરવઠા શૃંખલાઓને ખલેલ પહોંચાડી શકે છે અને મોટા પ્રાદેશિક સંઘર્ષોમાં વધારો કરી શકે છે.",
-    //       },
-    //     },
-    //   ],
-    // };
+    let { safeParsed, youtubeSEO } = await getNews(date);
 
-    // const allNews = [...(newsORG?.India || []), ...(newsORG?.World || [])];
-    // const news = allNews.flatMap((item, index) =>
-    //   Object.entries(item).map(([lang, content]) => ({
-    //     id: index,
-    //     ...content,
-    //     language: lang,
-    //     india: index < 4,
-    //   }))
-    // );
-    // console.log("news", news);
+    var newsORG = {
+      ...safeParsed,
+      ...youtubeSEO,
+    };
 
-    // // // 1️⃣ Generate TTS and reels
-    // const audioFiles = await generateTTS(news, outputDir);
-    // console.log(
-    //   "Generated audio files:",
-    //   audioFiles.map((a) => a.path)
-    // );
+    // Convert object to a formatted string
+    const newsText =
+      typeof newsORG === "string" ? newsORG : JSON.stringify(newsORG, null, 2);
+
+    // ✅ Ensure outputDir exists
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // ✅ Write to file
+    fs.writeFileSync(
+      path.join(outputDir, `news_${date}.txt`),
+      newsText,
+      "utf-8"
+    );
+
+    const allNews = [
+      ...(safeParsed?.India || []),
+      ...(safeParsed?.World || []),
+    ];
+    const news = allNews.flatMap((item, index) =>
+      Object.entries(item).map(([lang, content]) => ({
+        id: index,
+        ...content,
+        language: lang,
+        india: index < 4,
+      }))
+    );
+
+    // // 1️⃣ Generate TTS and reels
+    const audioFiles = await generateTTS(news, outputDir);
 
     // 2️⃣ Get all generated reels
     ["gujarati", "hindi", "english"].forEach(async (lang) => {
@@ -943,8 +741,11 @@ async function mergeVideos(videoFiles, outputFile) {
 
       const finalOutput = path.join(outputDir, `final_${lang}_video.mp4`);
       await mergeVideos(allVideos, finalOutput, lang);
-
       console.log("🚀 All videos merged into:", finalOutput);
+
+      // 4️⃣ Upload to youtube
+      const videoToUpload = await getAllFinalVideosByDate();
+      console.log("Videos pushed to youtube:", videoToUpload);
     });
   } catch (err) {
     console.error("Fatal error:", err.message || err);

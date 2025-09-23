@@ -15,8 +15,8 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ---------- UTILS ----------
 function getYesterday() {
-  // return dayjs().subtract(1, "day").format("YYYY-MM-DD");
-  return dayjs().format("YYYY-MM-DD");
+  return dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  // return dayjs().format("YYYY-MM-DD");
 }
 
 function getOutputDirForDate(date) {
@@ -45,6 +45,25 @@ function cleanGeminiJSON(text) {
 
   return cleaned.trim();
 }
+
+const generateFolderFile = async (folder, safeTitle, content) => {
+  const folderPath = path.resolve(folder);
+  const filePath = path.join(folderPath, `${safeTitle}.txt`);
+
+  try {
+    // Create nested folder structure if not exists
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true }); // ✅ allows "a/b/c"
+    }
+
+    fs.writeFileSync(filePath, JSON.stringify(content, null, 2), "utf8");
+    console.log(`✅ Content saved to: ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error("❌ Error writing file:", error);
+    return false;
+  }
+};
 
 // ---------- CONFIG ----------
 
@@ -132,7 +151,18 @@ Return the response strictly as a **valid JSON object** with the following struc
 
       // ✅ Extract raw text
       const text = res?.response?.text ? res.response.text().trim() : "";
-      console.log("✅ Gemini raw output:", text.slice(0, 200) + "...");
+      // Convert object to a formatted string
+
+      generateFolderFile(
+        `./output/${date}`,
+        `news_${date}`,
+        JSON.stringify(text, null, 2)
+      );
+
+      // Write to file
+      // fs.writeFileSync(`news_${date}.txt`, newsText, "utf-8");
+
+      console.log("✅ Gemini raw output:", text);
 
       // ✅ Parse JSON safely
       let parsed;
@@ -337,7 +367,7 @@ function generateReel({
   return new Promise(async (resolve, reject) => {
     try {
       const metadata = await ffprobePromise(audioFile);
-      const duration = metadata.format.duration || 10;
+      const duration = metadata.format.duration || 20;
       const { width: videoWidth } = await getVideoDimensions(videoFile);
       console.log("🎬 Reel width:", videoWidth);
       console.log("🎵 Audio duration:", duration);
@@ -563,106 +593,105 @@ function mergeVideos(videoFiles, outputFile) {
     // let news = {
     //   India: [
     //     {
-    //       title: "Chandrayaan-4 s Successful Lunar Landing",
-    //       image_url: "https://www.example.com/chandrayaan4.jpg",
-    //       title_hindi: "चंद्रयान-4 की सफल चंद्र लैंडिंग",
+    //       title: "Trump's $100K H-1B Fee Hits Indian IT Firms Hard",
+    //       title_hindi: "ट्रम्प का $100K H-1B शुल्क भारतीय आईटी प्रभावित",
+    //       title_gujarati: "ટ્રમ્પનું $100K H-1B ફી ભારતીય આઈટી પર અસર",
     //       india: true,
     //       description_speech:
-    //         "भारत का चंद्रयान-4 चाँद पर सफलतापूर्वक उतरा।  इस मिशन से चाँद की सतह के बारे में नई जानकारी मिलने की उम्मीद है। यह भारत की अंतरिक्ष यात्रा में एक बड़ी उपलब्धि है।",
+    //         "ट्रम्प की नई नीति में H-1B वीज़ा शुल्क $100K हुआ, जिससे भारतीय IT शेयरों और रोजगार पर गंभीर असर पड़ा।",
     //       description_display:
-    //         "India s Chandrayaan-4 successfully landed on the moon. This mission is expected to provide new information about the lunar surface.  It represents a significant achievement in India s space exploration program.",
+    //         "Trump's $100K H-1B fee hits Indian IT stocks and may impact employment and sector growth.",
+    //       description_gujarati:
+    //         "ટ્રમ્પની નીતિ મુજબ H-1B વિઝા પર $100K ફી લાગુ, ભારતીય IT શેર અને રોજગારી પર અસર.",
     //     },
     //     {
-    //       title: "New Economic Reforms Announced",
-    //       image_url: "https://www.example.com/economicreforms.jpg",
-    //       title_hindi: "नई आर्थिक सुधारों की घोषणा",
+    //       title: "Indian IT Stocks Fall on U.S. Visa Fee Hike",
+    //       title_hindi:
+    //         "भारतीय IT शेयरों में अमेरिकी वीज़ा शुल्क बढ़ोतरी से गिरावट",
+    //       title_gujarati: "અમેરિકન વિઝા ફી વધારાથી ભારતીય IT શેરમાં ઘટાડો",
     //       india: true,
     //       description_speech:
-    //         "सरकार ने कई महत्वपूर्ण आर्थिक सुधारों की घोषणा की है, जिनमें  निवेश को बढ़ावा देना और रोजगार के अवसर पैदा करना शामिल है।  इन सुधारों से देश की अर्थव्यवस्था को मजबूती मिलेगी।",
+    //         "H-1B वीज़ा शुल्क बढ़ोतरी के बाद Infosys, Wipro और TCS के शेयरों में तेज गिरावट आई।",
     //       description_display:
-    //         "The government announced several key economic reforms aimed at boosting investment and creating jobs. These reforms are expected to strengthen the nation s economy.",
+    //         "U.S. H-1B fee hike causes sharp declines in Indian IT stocks like Infosys and Wipro.",
+    //       description_gujarati:
+    //         "H-1B ફી વધારાના પગલે ઇન્ફોસિસ, વિપ્રો અને TCS શેરોમાં ઘટાડો થયો.",
     //     },
     //     {
-    //       title: "Monsoon Season Update & Impact",
-    //       image_url: "https://www.example.com/monsoon.jpg",
-    //       title_hindi: "मानसून सीजन अपडेट और प्रभाव",
+    //       title: "Telangana MPs Demand Action on H-1B Fee Impact",
+    //       title_hindi: "तेलंगाना सांसदों ने H-1B शुल्क पर कार्रवाई मांगी",
+    //       title_gujarati: "તેલંગાણા સાંસદોએ H-1B ફી પર કાર્યવાહી માંગ્યો",
     //       india: true,
     //       description_speech:
-    //         "इस साल मानसून सामान्य से अधिक रहा है जिससे कृषि को लाभ हुआ है। कुछ इलाकों में बाढ़ की भी समस्या आई है। सरकार राहत कार्य में जुटी है।",
+    //         "सांसदों ने केंद्र से H-1B शुल्क वृद्धि के प्रभावों पर ध्यान देने और उपाय करने की अपील की।",
     //       description_display:
-    //         "This year s monsoon season has been above average, benefiting agriculture. However, some areas experienced flooding. The government is engaged in relief efforts.",
+    //         "Telangana MPs urge Indian government to address H-1B visa fee hike impact on IT professionals.",
+    //       description_gujarati:
+    //         "સાંસદોએ ભારતીય સરકારને H-1B ફી વધારાના પ્રભાવ માટે પગલાં લેવા કહ્યું.",
     //     },
     //     {
-    //       title: "Supreme Court Ruling on Privacy",
-    //       image_url: "https://www.example.com/supremecourt.jpg",
-    //       title_hindi: "गोपनीयता पर सुप्रीम कोर्ट का फैसला",
+    //       title: "Nasscom Welcomes Clarification on H-1B Fees",
+    //       title_hindi: "Nasscom ने H-1B शुल्क स्पष्टिकरण का स्वागत किया",
+    //       title_gujarati: "Nasscomએ H-1B ફી સ્પષ્ટીકરણનો સ્વાગત કર્યું",
     //       india: true,
     //       description_speech:
-    //         "सुप्रीम कोर्ट ने गोपनीयता के अधिकार पर एक महत्वपूर्ण फैसला सुनाया है जिससे नागरिकों के अधिकारों को सुरक्षा मिलेगी।  यह फैसला कानूनी हलकों में चर्चा का विषय बना हुआ है।",
+    //         "Nasscom ने बताया कि नए शुल्क केवल नए H-1B आवेदनों पर लागू होंगे, इससे आईटी कंपनियों को राहत मिली।",
     //       description_display:
-    //         "The Supreme Court delivered a landmark ruling on the right to privacy, providing further protection for citizens' rights. The decision has sparked considerable debate in legal circles.",
-    //     },
-    //     {
-    //       title: "Political Developments in Bihar",
-    //       image_url: "https://www.example.com/biharpolitics.jpg",
-    //       title_hindi: "बिहार में राजनीतिक घटनाक्रम",
-    //       india: true,
-    //       description_speech:
-    //         "बिहार में हाल ही में हुए राजनीतिक घटनाक्रमों से राज्य की राजनीति में हलचल मची हुई है।  विभिन्न दलों के बीच गठबंधन और टकराव देखने को मिल रहे हैं।",
-    //       description_display:
-    //         "Recent political developments in Bihar have created significant turbulence in the state s political landscape.  There have been shifts in alliances and conflicts between various parties.",
+    //         "Nasscom welcomes U.S. clarification that $100K H-1B fee applies only to new applications, easing IT concerns.",
+    //       description_gujarati:
+    //         "Nasscomએ કહ્યું કે નવા ફી માત્ર નવા H-1B અરજીઓ માટે લાગુ, IT ક્ષેત્રને રાહત મળી.",
     //     },
     //   ],
     //   World: [
     //     {
-    //       title: "Global Climate Change Summit",
-    //       image_url: "https://www.example.com/climatesummit.jpg",
-    //       title_hindi: "वैश्विक जलवायु परिवर्तन शिखर सम्मेलन",
-    //       india: false,
+    //       title: "Trump's H-1B Fee May Cost US Firms $14 Billion",
+    //       title_hindi:
+    //         "ट्रम्प के H-1B शुल्क से अमेरिकी कंपनियों पर 14 अरब खर्च",
+    //       title_gujarati: "ટ્રમ્પની H-1B ફી US કંપનીઓ માટે $14 બિલિયન ખર્ચ",
+    //       india: true,
     //       description_speech:
-    //         "विश्व नेताओं का जलवायु परिवर्तन पर शिखर सम्मेलन हुआ जहाँ ग्लोबल वार्मिंग से निपटने के उपायों पर चर्चा हुई।  कार्बन उत्सर्जन कम करने पर ज़ोर दिया गया।",
+    //         "H-1B वीज़ा शुल्क $100K बढ़ोतरी से अमेरिकी कंपनियों पर 14 अरब डॉलर का असर पड़ेगा।",
     //       description_display:
-    //         "World leaders convened for a climate change summit to discuss strategies for combating global warming.  Emphasis was placed on reducing carbon emissions.",
+    //         "$100K H-1B fee may cost U.S. companies $14 billion annually, affecting hiring strategies.",
+    //       description_gujarati:
+    //         "H-1B વિઝા ફી $100K વધારાથી US કંપનીઓ પર $14 બિલિયન ખર્ચ પડશે.",
     //     },
     //     {
-    //       title: "Ukraine Conflict Intensifies",
-    //       image_url: "https://www.example.com/ukraine.jpg",
-    //       title_hindi: "यूक्रेन संघर्ष तेज हुआ",
-    //       india: false,
+    //       title: "White House Justifies H-1B Fee Hike Amid Criticism",
+    //       title_hindi:
+    //         "व्हाइट हाउस ने आलोचना के बीच H-1B शुल्क बढ़ोतरी का समर्थन किया",
+    //       title_gujarati: "વ્હાઇટ હાઉસે H-1B ફી વધારાને સમર્થન આપ્યું",
+    //       india: true,
     //       description_speech:
-    //         "यूक्रेन में युद्ध की स्थिति और बिगड़ी है।  अंतरराष्ट्रीय समुदाय  शांति स्थापित करने के प्रयास कर रहा है।  मानवीय संकट गहराता जा रहा है।",
+    //         "व्हाइट हाउस ने कहा कि H-1B वीज़ा शुल्क बढ़ोतरी से अमेरिकी कर्मचारियों की सुरक्षा सुनिश्चित होगी।",
     //       description_display:
-    //         "The situation in Ukraine has worsened with the ongoing conflict. The international community is attempting to broker peace. The humanitarian crisis continues to deepen.",
+    //         "White House defends H-1B fee hike as a measure to protect American workers.",
+    //       description_gujarati:
+    //         "વ્હાઇટ હાઉસે કહ્યું કે H-1B ફી વધારાથી અમેરિકન કર્મચારીઓની સુરક્ષા થશે.",
     //     },
     //     {
-    //       title: "Economic Slowdown in Europe",
-    //       image_url: "https://www.example.com/europeslowdown.jpg",
-    //       title_hindi: "यूरोप में आर्थिक मंदी",
-    //       india: false,
+    //       title: "Global Tech Faces Challenges Due to H-1B Fee Rise",
+    //       title_hindi: "वैश्विक तकनीकी क्षेत्र H-1B शुल्क वृद्धि से चुनौती में",
+    //       title_gujarati: "ગ્લોબલ ટેક H-1B ફી વધારાથી પડકારનો સામનો",
+    //       india: true,
     //       description_speech:
-    //         "यूरोप के कई देश आर्थिक मंदी का सामना कर रहे हैं।  महंगाई और ऊर्जा संकट बड़ी चुनौतियाँ हैं।  सरकारें समाधान ढूँढने में जुटी हैं।",
+    //         "नई H-1B शुल्क नीति से वैश्विक तकनीकी कंपनियों को कुशल विदेशी कर्मचारियों की भर्ती में मुश्किलें।",
     //       description_display:
-    //         "Several European countries are facing an economic slowdown. Inflation and energy crises are major challenges. Governments are scrambling for solutions.",
+    //         "New $100K H-1B fee creates challenges for global tech firms hiring skilled foreign workers.",
+    //       description_gujarati:
+    //         "નવી H-1B ફી વૈશ્વિક ટેક કંપનીઓ માટે કુશળ વિદેશી કર્મચારીઓ ભાડે રાખવામાં પડકાર.",
     //     },
     //     {
-    //       title: "New COVID-19 Variant Emerges",
-    //       image_url: "https://www.example.com/covidvariant.jpg",
-    //       title_hindi: "नया कोविड-19 वेरिएंट सामने आया",
-    //       india: false,
+    //       title: "Goldman Sachs Advises Caution for H-1B Holders",
+    //       title_hindi: "गोल्डमैन सैक्स ने H-1B धारकों को सतर्क रहने की सलाह दी",
+    //       title_gujarati: "ગોલ્ડમેન સૅક્સે H-1B ધારકોને સાવધાન રહેવાની સલાહ",
+    //       india: true,
     //       description_speech:
-    //         "एक नया कोरोना वायरस वेरिएंट सामने आया है जिससे वैश्विक स्वास्थ्य संगठन चिंतित है।  नए वेरिएंट से निपटने की तैयारी की जा रही है।",
+    //         "गोल्डमैन सैक्स ने H-1B वीज़ा धारकों को अंतरराष्ट्रीय यात्रा में सावधानी बरतने की चेतावनी दी।",
     //       description_display:
-    //         "A new COVID-19 variant has emerged, causing concern for the World Health Organization. Preparations are underway to address this new variant.",
-    //     },
-    //     {
-    //       title: "Tensions Rise in South China Sea",
-    //       image_url: "https://www.example.com/southchinasea.jpg",
-    //       title_hindi: "दक्षिण चीन सागर में तनाव बढ़ा",
-    //       india: false,
-    //       description_speech:
-    //         "दक्षिण चीन सागर में क्षेत्रीय देशों के बीच तनाव बढ़ गया है।  क्षेत्रीय अखंडता को लेकर विवाद जारी है।  अंतरराष्ट्रीय समुदाय शांतिपूर्ण समाधान चाहता है।",
-    //       description_display:
-    //         "Tensions have risen in the South China Sea among regional nations. Disputes over territorial integrity persist. The international community seeks a peaceful resolution.",
+    //         "Goldman Sachs advises H-1B visa holders to exercise caution during international travel amid policy uncertainty.",
+    //       description_gujarati:
+    //         "ગોલ્ડમેન સૅક્સે H-1B વિઝા ધારકોને આંતરરાષ્ટ્રીય મુસાફરીમાં સાવધાન રહેવાની સલાહ આપી.",
     //     },
     //   ],
     // };
