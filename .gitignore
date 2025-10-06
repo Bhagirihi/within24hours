@@ -24,3 +24,5 @@ pnpm-lock.yaml
 # System files
 .DS_Store
 Thumbs.db
+token.json
+client_secret_*.json

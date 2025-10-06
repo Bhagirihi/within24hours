@@ -49,47 +49,20 @@ function cleanGeminiJSON(text) {
 }
 
 // ---------- CONFIG ----------
-
-// const voice = "ballad";
-// const vibe = {
-//   voice:
-//     "Clear, professional, and authoritative, with a confident newsroom cadence.",
-//   punctuation:
-//     "Crisp and deliberate, with short pauses for emphasis, mirroring live TV news delivery.",
-//   delivery:
-//     "Energetic yet controlled, keeping a steady pace that conveys urgency without sounding rushed.",
-//   phrasing:
-//     "Concise and impactful, structured like broadcast headlines, ensuring each sentence lands strongly.",
-//   tone: "Neutral but engaging, balancing seriousness with approachability — like a trusted anchor delivering important updates.",
-// };
-
-// const voice = "nova";
-// const vibe = {
-//   Voice:
-//     "faster-paced, Clear, professional, and authoritative, with a confident newsroom cadence.",
-//   Tone: "Neutral yet engaging, balancing seriousness with approachability — like a trusted anchor delivering important updates.",
-//   Delivery:
-//     "Energetic yet controlled, with a steady pace that conveys urgency without sounding rushed.",
-//   Pronunciation:
-//     "Crisp and deliberate, with emphasis on numbers, names, and key facts to ensure clarity.",
-//   Phrasing:
-//     "Concise and impactful, structured like broadcast headlines, ensuring each sentence lands strongly.",
-// };
-
-const voice = "alloy";
+const voice = "onyx";
 const vibe = {
-  Voice:
-    "Confident, energetic, and engaging; project authority with urgency while staying approachable.",
-  Tone: "Professional, dynamic, and slightly urgent—capture attention immediately while remaining credible and balanced.",
+  Voice: "Confident, high-energy — like a breaking-news anchor on speed mode.",
+  Tone: "Sharp, dynamic, and urgent — captures attention instantly with no downtime.",
   Pacing:
-    "Fast and efficient; keep the flow sharp and continuous, but never rush to the point of losing clarity.",
+    "Fast and continuous; headlines delivered in a machine-gun rhythm, with slightly slower pacing for secondary details before snapping back to rapid-fire.",
   Emotion:
-    "Controlled intensity; add urgency for breaking news, neutrality for political or economic updates, and brightness for positive stories. Always convey seriousness without sounding robotic.",
+    "Controlled urgency with subtle variation — urgency dominates, but allow tiny pitch shifts every few headlines to keep it human and engaging.",
   Pronunciation:
-    "Crisp and precise; hit consonants clearly, emphasize critical words like “breaking,” “urgent,” “confirmed,” “developing” to make headlines impactful.",
+    "Very crisp and precise. Emphasize impact words like 'breaking,' 'alert,' 'urgent,' while letting filler words glide quickly.",
   Pauses:
-    "Very brief—just a split second between headlines or after key phrases to let the audience absorb information before moving on.",
+    "Micro-pauses only — about 0.3–0.4s between headlines for breathing space, slightly longer (0.6s) after big impactful news before resuming speed.",
 };
+
 // ---------- NEWS (via Gemini) ----------
 async function getNews(date) {
   console.log("📰 Fetching news from Gemini for", date, "...");
@@ -117,14 +90,24 @@ async function getNews(date) {
     () => `You are a professional multilingual journalist and an expert geopolitical and economic analyst.
 Your task is to prepare a "Daily Knowledge Bulletin" for ${date} in valid JSON format, focusing on detailed, non-generic analysis.
 
-The JSON must strictly follow this structure and be returned as a single valid JSON object only.
+**Strict rules**:
+0. After generating the Hindi and Gujarati text, perform a final review to ensure perfect spelling and grammar.
+1. Insert CTA Message at the end of **only one** description (either in India or World section).
+2. Focus on providing **detailed, non-generic information** in all fields, especially the 'description' and 'why_it_matters' sections.
+3. Provide only 4-5 major key events in each section ("India" and "World").
+4. News must be serious and knowledgeable: policy, economy, environment, science, technology, health, defence, or international relations.
+5. Exclude entertainment, celebrity, lifestyle, and sports.
+6. Do not use apostrophes in any field.
+7. After generating the Hindi and Gujarati text, perform a final proofreading step to strictly check and correct spelling, grammar, and natural phrasing. Output must read as if written by a native speaker with no mistakes.
+8. Return only the final valid JSON object with no comments, explanations, or extra text.
 
+The JSON must strictly follow this structure and be returned as a single valid JSON object only.
 {
 
   "India": [
     {
       "english": {
-        "title": "Factual headline (10–16 words, knowledge-heavy, specific details)",
+        "title": "Factual headline (around 50 characters)",
         "description": "Concise 2–3 sentence summary focusing on concrete, verifiable details. Avoid vague phrases like 'concerns remain' or 'mixed results'.",
         "why_it_matters": "Sharp, 1–2 sentence analysis on the long-term impact on policy, economy, tech, science, or geopolitics. Explain the 'so what?' factor."
       },
@@ -144,7 +127,7 @@ The JSON must strictly follow this structure and be returned as a single valid J
   "World": [
     {
       "english": {
-        "title": "Factual headline (10–16 words, knowledge-heavy, specific details)",
+        "title": "Factual headline (around 50 characters)",
         "description": "Concise 2–3 sentence summary focusing on concrete, verifiable details. Avoid vague phrases.",
         "why_it_matters": "Sharp, 1–2 sentence analysis on the long-term impact on geopolitics, economy, climate, or health. Explain the 'so what?' factor."
       },
@@ -163,16 +146,7 @@ The JSON must strictly follow this structure and be returned as a single valid J
  "title": The single best catchy YouTube Shorts title (45–60 characters) with India & Global context, urgency and curiosity hooks (e.g., "Shocking", "Within 24 Hrs"), today’s date (e.g., 22 Sept 2025), and 1–2 strong hashtags; return only the title text.
  "tags": 8–12 SEO-friendly, keyword-rich tags (approx. 250 characters, comma-separated) related to India & Global news, breaking news, economy, technology, geopolitics, and world updates.
  "hashtags": 3–5 relevant, keyword-rich hashtags (comma-separated) for YouTube Shorts, reflecting urgency and trending topics in India & Global news.
-}
-
-Strict rules:
-0. After generating the Hindi and Gujarati text, perform a final review to ensure perfect spelling and grammar.
-1. Focus on providing **detailed, non-generic information** in all fields, especially the 'description' and 'why_it_matters' sections.
-2. Provide only 4-5 major key events in each section ("India" and "World").
-3. News must be serious and knowledgeable: policy, economy, environment, science, technology, health, defence, or international relations.
-4. Exclude entertainment, celebrity, lifestyle, and sports.
-5. Do not use apostrophes in any field.
-6. Return only the final valid JSON object with no comments, explanations, or extra text.`;
+}`;
 
   for (let attempt = 0; attempt < models.length; attempt++) {
     const modelName = models[attempt];
@@ -396,7 +370,7 @@ function generateReel({
   return new Promise(async (resolve, reject) => {
     try {
       const metadata = await ffprobePromise(audioFile);
-      const duration = metadata.format.duration || 20;
+      const duration = metadata.format.duration || 30;
       const { width: videoWidth } = await getVideoDimensions(videoFile);
       console.log("🎬 Reel width:", videoWidth);
       console.log("🎵 Audio duration:", duration);
@@ -419,10 +393,10 @@ function generateReel({
         `[0:v][img]overlay=x=0:y=0[bg]`,
 
         // Title text
-        `[bg]drawtext=fontfile='${fontTitleSafe}':text='${titleText}':fontcolor=white:fontsize=60:x='if(lt(t,0.8), -text_w + (60+text_w)*(t/0.8), 60)':y=1190:alpha='if(lt(t,0.8),(t/0.8),1)':shadowcolor=black:shadowx=2:shadowy=2:line_spacing=15[vid1]`,
+        `[bg]drawtext=fontfile='${fontTitleSafe}':text='${titleText}':fontcolor=white:fontsize=50:x='if(lt(t,0.8), -text_w + (60+text_w)*(t/0.8), 60)':y=1190:alpha='if(lt(t,0.8),(t/0.8),1)':shadowcolor=black:shadowx=2:shadowy=2:line_spacing=15[vid1]`,
 
         // Description text
-        `[vid1]drawtext=fontfile='${fontDescSafe}':text='${descText}':fontcolor=yellow:fontsize=40:x='if(lt(t,1.6), -text_w + (60+text_w)*((t-0.8)/0.8), 60)':y=1390:alpha='if(lt(t,1.6),((t-0.8)/0.8),1)':line_spacing=16:shadowcolor=black:shadowx=1:shadowy=1[vid2]`,
+        `[vid1]drawtext=fontfile='${fontDescSafe}':text='${descText}':fontcolor=yellow:fontsize=36:x='if(lt(t,1.6), -text_w + (60+text_w)*((t-0.8)/0.8), 60)':y=1390:alpha='if(lt(t,1.6),((t-0.8)/0.8),1)':line_spacing=16:shadowcolor=black:shadowx=1:shadowy=1[vid2]`,
       ];
 
       ffmpeg()
@@ -499,9 +473,9 @@ async function generateTTS(allNews, outputDir) {
 
     const title = await prepareText(
       item.title || "",
-      item.language == "english" ? 40 : item.language == "gujarati" ? 32 : 36
+      item.language == "english" ? 40 : item.language == "gujarati" ? 36 : 38
     );
-    const description = await prepareText(item.description || "", 46);
+    const description = await prepareText(item.description || "", 50);
     console.log("Description:", title, description);
     var outputVideoFile = path.join(
       outputDir,
@@ -742,11 +716,10 @@ async function mergeVideos(videoFiles, outputFile) {
       const finalOutput = path.join(outputDir, `final_${lang}_video.mp4`);
       await mergeVideos(allVideos, finalOutput, lang);
       console.log("🚀 All videos merged into:", finalOutput);
-
-      // 4️⃣ Upload to youtube
-      const videoToUpload = await getAllFinalVideosByDate();
-      console.log("Videos pushed to youtube:", videoToUpload);
     });
+    // 4️⃣ Upload to youtube
+    const videoToUpload = await getAllFinalVideosByDate();
+    console.log("Videos pushed to youtube:", videoToUpload);
   } catch (err) {
     console.error("Fatal error:", err.message || err);
     process.exitCode = 1;

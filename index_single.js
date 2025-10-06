@@ -15,8 +15,8 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ---------- UTILS ----------
 function getYesterday() {
-  return dayjs().subtract(1, "day").format("YYYY-MM-DD");
-  // return dayjs().format("YYYY-MM-DD");
+  // return dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  return dayjs().format("YYYY-MM-DD");
 }
 
 function getOutputDirForDate(date) {
@@ -67,17 +67,31 @@ const generateFolderFile = async (folder, safeTitle, content) => {
 
 // ---------- CONFIG ----------
 
-const voice = "ballad";
+// const voice = "ballad";
+// const vibe = {
+//   voice:
+//     "Clear, professional, and authoritative, with a confident newsroom cadence.",
+//   punctuation:
+//     "Crisp and deliberate, with short pauses for emphasis, mirroring live TV news delivery.",
+//   delivery:
+//     "Energetic yet controlled, keeping a steady pace that conveys urgency without sounding rushed.",
+//   phrasing:
+//     "Concise and impactful, structured like broadcast headlines, ensuring each sentence lands strongly.",
+//   tone: "Neutral but engaging, balancing seriousness with approachability — like a trusted anchor delivering important updates.",
+// };
+
+const voice = "onyx";
 const vibe = {
-  voice:
-    "Clear, professional, and authoritative, with a confident newsroom cadence.",
-  punctuation:
-    "Crisp and deliberate, with short pauses for emphasis, mirroring live TV news delivery.",
-  delivery:
-    "Energetic yet controlled, keeping a steady pace that conveys urgency without sounding rushed.",
-  phrasing:
-    "Concise and impactful, structured like broadcast headlines, ensuring each sentence lands strongly.",
-  tone: "Neutral but engaging, balancing seriousness with approachability — like a trusted anchor delivering important updates.",
+  Voice: "Confident, high-energy — like a breaking-news anchor on speed mode.",
+  Tone: "Sharp, dynamic, and urgent — captures attention instantly with no downtime.",
+  Pacing:
+    "Fast and continuous; headlines delivered in a machine-gun rhythm, with slightly slower pacing for secondary details before snapping back to rapid-fire.",
+  Emotion:
+    "Controlled urgency with subtle variation — urgency dominates, but allow tiny pitch shifts every few headlines to keep it human and engaging.",
+  Pronunciation:
+    "Very crisp and precise. Emphasize impact words like 'breaking,' 'alert,' 'urgent,' while letting filler words glide quickly.",
+  Pauses:
+    "Micro-pauses only — about 0.3–0.4s between headlines for breathing space, slightly longer (0.6s) after big impactful news before resuming speed.",
 };
 
 // ---------- NEWS (via Gemini) ----------
@@ -129,6 +143,7 @@ Return the response strictly as a **valid JSON object** with the following struc
 }
 ### Requirements:
 - Provide **4–6 major events** in each section ("India" and "World").
+- Insert **"वीडियो पसंद आए तो लाइक करें, शेयर करें और चैनल सब्सक्राइब करना न भूलें।"** at the end of **only one** description_speech (either in India or World section).
 - Make sure **titles** and **description_display** **do not include apostrophes or possessives** ('s).
 - Each **title** must be concise, specific, and in **English only**.
 - Each **title_hindi** must be concise, specific, and in **Hindi only**, you can add commonly speaking English words.
@@ -367,7 +382,7 @@ function generateReel({
   return new Promise(async (resolve, reject) => {
     try {
       const metadata = await ffprobePromise(audioFile);
-      const duration = metadata.format.duration || 20;
+      const duration = metadata.format.duration || 30;
       const { width: videoWidth } = await getVideoDimensions(videoFile);
       console.log("🎬 Reel width:", videoWidth);
       console.log("🎵 Audio duration:", duration);
