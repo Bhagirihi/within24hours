@@ -5,13 +5,30 @@ import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
 import dayjs from "dayjs";
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
+
 import dotenv from "dotenv";
 import sharp from "sharp";
 
 dotenv.config();
+import ffmpeg from "fluent-ffmpeg";
+
+let ffmpegPath;
+
+if (
+  process.platform === "linux" &&
+  (process.arch === "arm64" || process.env.PREFIX?.includes("com.termux"))
+) {
+  // 🟢 Running inside Termux
+  console.log("Detected Termux environment — using system ffmpeg");
+  ffmpegPath = "ffmpeg"; // use built-in binary from pkg install ffmpeg
+} else {
+  // 💻 Running on desktop/server
+  const { default: staticPath } = await import("ffmpeg-static");
+  ffmpegPath = staticPath;
+}
+
 ffmpeg.setFfmpegPath(ffmpegPath);
+console.log("FFmpeg path:", ffmpegPath);
 
 // ---------- UTILS ----------
 function getYesterday() {
